@@ -13,29 +13,73 @@ class Rayleigh:
         self.tab_tau = np.arange(0.002, 0.4 + 0.002, 0.002)
         self.points = (self.tab_tau, self.tab_solz, self.tab_senz)
 
+        self.interp_I = [
+            RegularGridInterpolator(
+                self.points,
+                self.tab_coef[:, 0, :, :, 0],
+            ),
+            RegularGridInterpolator(
+                self.points,
+                self.tab_coef[:, 0, :, :, 1],
+            ),
+            RegularGridInterpolator(
+                self.points,
+                self.tab_coef[:, 0, :, :, 2],
+            ),
+        ]
+        self.interp_Q = [
+            RegularGridInterpolator(
+                self.points,
+                self.tab_coef[:, 1, :, :, 0],
+            ),
+            RegularGridInterpolator(
+                self.points,
+                self.tab_coef[:, 1, :, :, 1],
+            ),
+            RegularGridInterpolator(
+                self.points,
+                self.tab_coef[:, 1, :, :, 2],
+            ),
+        ]
+        self.interp_U = [
+            RegularGridInterpolator(
+                self.points,
+                self.tab_coef[:, 2, :, :, 0],
+            ),
+            RegularGridInterpolator(
+                self.points,
+                self.tab_coef[:, 2, :, :, 1],
+            ),
+            RegularGridInterpolator(
+                self.points,
+                self.tab_coef[:, 2, :, :, 2],
+            ),
+        ]
+
     def get_ray(self, tau, f0, solz, senz, phi, type="I"):
         pts = (tau, solz, senz)
 
         if type == "I":
-
-            ray_i = 0
-            for i in range(3):
-                interp_I = RegularGridInterpolator(
-                    self.points,
-                    self.tab_coef[:, 0, :, :, i],
-                )
-                ray_coef_I = interp_I(pts)
-                ray_i = ray_i + ray_coef_I * np.cos(np.deg2rad(i * phi))
+            ray_i = (
+                self.interp_I[0](pts)
+                + self.interp_I[1](pts) * np.cos(np.deg2rad(1 * phi))
+                + self.interp_I[2](pts) * np.cos(np.deg2rad(2 * phi))
+            )
             return f0 * ray_i
-        else:
 
-            ray = np.zeros(3)
+        elif type == "Q":
+            ray_q = (
+                self.interp_Q[0](pts)
+                + self.interp_Q[1](pts) * np.cos(np.deg2rad(1 * phi))
+                + self.interp_Q[2](pts) * np.cos(np.deg2rad(2 * phi))
+            )
+            return f0 * ray_q
 
-            for i in range(3):
-                for j in range(3):
-                    interp = RegularGridInterpolator(
-                        self.points, self.tab_coef[:, i, :, :, j]
-                    )
-                    ray_coef = interp(pts)
-                    ray[i] = ray[i] + ray_coef * np.cos(np.deg2rad(j * phi))
-            return f0 * ray
+        elif type == "U":
+            ray_u = (
+                self.interp_U[0](pts)
+                + self.interp_U[1](pts) * np.cos(np.deg2rad(1 * phi))
+                + self.interp_U[2](pts) * np.cos(np.deg2rad(2 * phi))
+            )
+
+            return f0 * ray_u
